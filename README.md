@@ -1,54 +1,93 @@
-# Heyun VPS Watchdog
+# 核云 VPS Watchdog
 
-OpenWrt-friendly shell watchdog for Heyun IDC VPS instances.
+一个适合 OpenWrt 使用的核云 VPS 状态检测脚本。
 
-The script logs in with Heyun API credentials, checks one or more VPS service IDs once, and sends a power-on command when an instance is stopped. It is designed to be run by `cron`, so it does not keep a long-running process.
+脚本每次运行只做一次检测：使用核云 API 凭据登录，检查一个或多个 VPS 实例状态；如果发现实例已经关机，则自动发送开机指令。脚本本身不会常驻运行，推荐交给 Linux/OpenWrt 的 `cron` 定时执行。
 
-## Requirements
+## 功能
 
-- POSIX `sh`
-- `curl`
-- `jsonfilter` recommended on OpenWrt
+- 使用核云 API 登录
+- 支持一个或多个 VPS 服务 ID
+- 检测 VPS 电源状态
+- 状态为关机时自动开机
+- 自带日志输出
+- 适合 OpenWrt，无需 Python
 
-If `jsonfilter` is unavailable, the script falls back to simple `sed` parsing for the fields it needs.
+## 依赖
 
-## Files
+需要系统具备：
 
-```text
-heyun_vps_watchdog.sh           Main script
-heyun_vps_watchdog.conf.example Example private config
+```sh
+sh
+curl
 ```
 
-## Configuration
+OpenWrt 上推荐有：
 
-Copy the example config:
+```sh
+jsonfilter
+```
+
+如果没有 `jsonfilter`，脚本会用 `sed` 做简单字段解析。
+
+## 文件说明
+
+```text
+heyun_vps_watchdog.sh           主脚本
+heyun_vps_watchdog.conf.example 配置模板
+heyun_vps_watchdog.conf         私有配置文件，不要提交到 Git
+```
+
+## 配置
+
+复制配置模板：
 
 ```sh
 cp heyun_vps_watchdog.conf.example heyun_vps_watchdog.conf
 chmod 600 heyun_vps_watchdog.conf
 ```
 
-Edit `heyun_vps_watchdog.conf`:
+编辑配置文件：
 
 ```sh
-API_USERNAME="your-api-username"
-API_KEY="your-api-key"
+vi heyun_vps_watchdog.conf
+```
+
+填写你的核云 API 凭据和实例 ID：
+
+```sh
+API_USERNAME="你的API用户名"
+API_KEY="你的API密钥"
 HEYUN_SERVICE_ID="8924"
 ```
 
-Multiple service IDs are supported:
+`HEYUN_SERVICE_ID` 就是核云详情页 URL 里的 `id`，例如：
+
+```text
+https://www.heyunidc.cn/servicedetail?id=8924
+```
+
+这里的服务 ID 就是：
+
+```text
+8924
+```
+
+## 多个实例
+
+支持空格分隔：
 
 ```sh
 HEYUN_SERVICE_ID="8924 9001 9002"
 ```
 
-or:
+也支持逗号分隔：
 
 ```sh
 HEYUN_SERVICE_ID="8924,9001,9002"
 ```
 
-Optional settings:
+## 可选配置
 
 ```sh
 BASE_URL="https://www.heyunidc.cn"
@@ -57,36 +96,46 @@ COOKIE_FILE="/tmp/heyun_vps_watchdog.cookie"
 LOG_PATH="/tmp/heyun_vps_watchdog.log"
 ```
 
-The private config file is ignored by git.
+说明：
 
-## Environment Overrides
+- `BASE_URL`：核云站点地址
+- `TIMEOUT`：请求超时时间，单位秒
+- `COOKIE_FILE`：临时 cookie 文件路径
+- `LOG_PATH`：日志输出路径
 
-All settings can also be provided with environment variables:
+## 环境变量覆盖
+
+也可以不写配置文件，直接用环境变量：
 
 ```sh
-export HEYUN_API_USERNAME="your-api-username"
-export HEYUN_API_KEY="your-api-key"
+export HEYUN_API_USERNAME="你的API用户名"
+export HEYUN_API_KEY="你的API密钥"
 export HEYUN_SERVICE_ID="8924,9001"
 export HEYUN_LOG_PATH="/tmp/heyun_vps_watchdog.log"
 ```
 
-Environment variables override values from `heyun_vps_watchdog.conf`.
+环境变量优先级高于 `heyun_vps_watchdog.conf`。
 
-You can also pass service IDs as command arguments:
+也可以直接把服务 ID 作为参数传入：
 
 ```sh
 ./heyun_vps_watchdog.sh 8924 9001
 ```
 
-## Manual Run
+## 手动执行
 
 ```sh
 chmod +x heyun_vps_watchdog.sh
 ./heyun_vps_watchdog.sh
+```
+
+查看日志：
+
+```sh
 tail -n 50 /tmp/heyun_vps_watchdog.log
 ```
 
-Example log:
+日志示例：
 
 ```text
 [2026-06-16 09:11:18] run: start
@@ -96,16 +145,16 @@ Example log:
 [2026-06-16 09:11:19] run: exit=0
 ```
 
-## OpenWrt Cron
+## OpenWrt 部署
 
-Upload the files to your router, for example:
+上传文件到 OpenWrt：
 
 ```sh
 mkdir -p /root/heyun
 scp heyun_vps_watchdog.sh heyun_vps_watchdog.conf.example root@openwrt:/root/heyun/
 ```
 
-On OpenWrt:
+在 OpenWrt 上配置：
 
 ```sh
 cd /root/heyun
@@ -115,32 +164,58 @@ chmod 700 heyun_vps_watchdog.sh
 vi heyun_vps_watchdog.conf
 ```
 
-Edit root crontab:
+手动测试：
+
+```sh
+/root/heyun/heyun_vps_watchdog.sh
+tail -n 50 /tmp/heyun_vps_watchdog.log
+```
+
+## 定时执行
+
+编辑 root 的 crontab：
 
 ```sh
 crontab -e
 ```
 
-Run every hour at minute 7:
+每小时第 7 分钟执行一次：
 
 ```cron
 7 * * * * /root/heyun/heyun_vps_watchdog.sh
 ```
 
-Reload cron if needed:
+如果需要每 30 分钟执行一次：
+
+```cron
+*/30 * * * * /root/heyun/heyun_vps_watchdog.sh
+```
+
+如果需要每天凌晨 3 点执行一次：
+
+```cron
+0 3 * * * /root/heyun/heyun_vps_watchdog.sh
+```
+
+OpenWrt 上如需重载 cron：
 
 ```sh
 /etc/init.d/cron reload
 ```
 
-View logs:
+查看日志：
 
 ```sh
 tail -n 100 /tmp/heyun_vps_watchdog.log
 ```
 
-## Notes
+## 安全提醒
 
-- Use API credentials from the Heyun client area API management page.
-- Do not commit `heyun_vps_watchdog.conf`.
-- If an API key was ever shared or committed, revoke it and generate a new one.
+- 不要提交 `heyun_vps_watchdog.conf`
+- 不要把 API 密钥写进公开仓库
+- 如果 API 密钥曾经泄露，建议在核云 API 管理里重新生成
+- 建议设置配置文件权限：
+
+```sh
+chmod 600 heyun_vps_watchdog.conf
+```
