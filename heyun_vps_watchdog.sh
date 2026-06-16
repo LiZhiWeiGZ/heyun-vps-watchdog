@@ -12,7 +12,7 @@ LOG_PATH="/tmp/heyun_vps_watchdog.log"
 
 # Optional private config file. Copy heyun_vps_watchdog.conf.example to
 # heyun_vps_watchdog.conf and keep that file out of git.
-SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+SCRIPT_DIR="$(CDPATH= cd "$(dirname "$0")" && pwd)"
 CONFIG_FILE="${HEYUN_CONFIG_FILE:-$SCRIPT_DIR/heyun_vps_watchdog.conf}"
 if [ -f "$CONFIG_FILE" ]; then
   # shellcheck disable=SC1090

@@ -1,8 +1,8 @@
 # 核云 VPS Watchdog
 
-一个适合 OpenWrt 使用的核云 VPS 状态检测脚本。
+一个适合 Linux/Unix 系统使用的核云 VPS 状态检测脚本。
 
-脚本每次运行只做一次检测：使用核云 API 凭据登录，检查一个或多个 VPS 实例状态；如果发现实例已经关机，则自动发送开机指令。脚本本身不会常驻运行，推荐交给 Linux/OpenWrt 的 `cron` 定时执行。
+脚本每次运行只做一次检测：使用核云 API 凭据登录，检查一个或多个 VPS 实例状态；如果发现实例已经关机，则自动发送开机指令。脚本本身不会常驻运行，推荐交给 Linux/Unix 系统的 `cron` 定时执行。
 
 ## 功能
 
@@ -11,7 +11,7 @@
 - 检测 VPS 电源状态
 - 状态为关机时自动开机
 - 自带日志输出
-- 适合 OpenWrt，无需 Python
+- 适合 Linux、Unix、OpenWrt 等系统，无需 Python
 
 ## 依赖
 
@@ -22,7 +22,7 @@ sh
 curl
 ```
 
-OpenWrt 上推荐有：
+OpenWrt 上通常自带或推荐安装：
 
 ```sh
 jsonfilter
@@ -145,16 +145,16 @@ tail -n 50 /tmp/heyun_vps_watchdog.log
 [2026-06-16 09:11:19] run: exit=0
 ```
 
-## OpenWrt 部署
+## Linux/Unix 部署
 
-上传文件到 OpenWrt：
+上传文件到目标机器：
 
 ```sh
 mkdir -p /root/heyun
-scp heyun_vps_watchdog.sh heyun_vps_watchdog.conf.example root@openwrt:/root/heyun/
+scp heyun_vps_watchdog.sh heyun_vps_watchdog.conf.example user@server:/root/heyun/
 ```
 
-在 OpenWrt 上配置：
+在目标机器上配置：
 
 ```sh
 cd /root/heyun
@@ -197,10 +197,18 @@ crontab -e
 0 3 * * * /root/heyun/heyun_vps_watchdog.sh
 ```
 
-OpenWrt 上如需重载 cron：
+多数 Linux/Unix 系统保存 crontab 后会自动生效。如需手动重载 cron，可按系统选择对应命令。
+
+OpenWrt：
 
 ```sh
 /etc/init.d/cron reload
+```
+
+systemd Linux 常见命令：
+
+```sh
+systemctl reload cron 2>/dev/null || systemctl reload crond 2>/dev/null || true
 ```
 
 查看日志：
