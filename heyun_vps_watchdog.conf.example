@@ -1,0 +1,14 @@
+# Copy this file to heyun_vps_watchdog.conf and fill in your own values.
+# Do not commit heyun_vps_watchdog.conf.
+
+API_USERNAME="your-api-username"
+API_KEY="your-api-key"
+
+# Multiple service IDs can be separated by spaces or commas.
+HEYUN_SERVICE_ID="8924"
+
+# Optional settings.
+BASE_URL="https://www.heyunidc.cn"
+TIMEOUT="15"
+COOKIE_FILE="/tmp/heyun_vps_watchdog.cookie"
+LOG_PATH="/tmp/heyun_vps_watchdog.log"
